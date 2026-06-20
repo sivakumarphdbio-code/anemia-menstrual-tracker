@@ -149,9 +149,9 @@ elif menu_choice == "📚 Nutrition & Education":
 elif menu_choice == "📲 Scan & Share App":
     st.header("📲 Scan to Open App on Your Phone")
     st.write("Examiners and students can scan this QR code using a phone camera to quickly access the tracking application interface.")
-    my_public_url = "https://streamlit.app"
-    # ✏️ MANUALLY WRITE YOUR LINK IN THE QUOTES BELOW SO IT STAYS LOCKED FOREVER:
-    my_public_url = "https://anemiacycletracker.in" 
+    
+    # ✏️ PLACEHOLDER LINK (We will find your real link in Step 3 below!)
+    my_public_url = "https://streamlit.io" 
     
     app_link = st.text_input("Public App URL Link Vector:", value=my_public_url)
     
