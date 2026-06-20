@@ -4,7 +4,6 @@ import sqlite3
 import qrcode
 from io import BytesIO
 from datetime import datetime
-import streamlit.components.v1 as components
 
 # --- 1. DATABASE SETUP ---
 def init_db():
@@ -70,7 +69,7 @@ def calculate_anemia_risk(flow, fatigue, dizziness, iron):
 init_db()
 st.set_page_config(page_title="Adolescent Health Assistant", page_icon="🩸", layout="centered")
 
-# --- 🌟 SIDEBAR NAVIGATION MENU ---
+# --- SIDEBAR NAVIGATION MENU ---
 st.sidebar.title("🧭 Main Menu")
 menu_choice = st.sidebar.radio(
     "Go To Page:",
@@ -151,42 +150,19 @@ elif menu_choice == "📲 Scan & Share App":
     st.header("📲 Scan to Open App on Your Phone")
     st.write("Examiners and students can scan this QR code using a phone camera to quickly access the tracking application interface.")
     
-    # --- AUTOMATED URL DETECTION ENGINE ---
-    # Hidden query parameter check
-    url_params = st.query_params
-    detected_url = url_params.get("current_address", "https://share.streamlit.io/")
+    # ✏️ MANUALLY WRITE YOUR LINK IN THE QUOTES BELOW SO IT STAYS LOCKED FOREVER:
+    my_public_url = "https://streamlit.app" 
     
-    # Seamless background script reading parent page address bar
-    components.html("""
-        <script>
-            const parentUrl = window.parent.location.href;
-            if (!parentUrl.includes('current_address=')) {
-                const separator = parentUrl.includes('?') ? '&' : '?';
-                window.parent.location.href = parentUrl + separator + 'current_address=' + encodeURIComponent(parentUrl);
-            }
-        </script>
-    """, height=0)
+    app_link = st.text_input("Public App URL Link Vector:", value=my_public_url)
     
-    # Fallback input field which auto-populates with the verified global user address
-    clean_url = detected_url.split('?')[0] if '?' in detected_url else detected_url
-    if "share.streamlit.io" in clean_url:
-        clean_url = "Please verify your public user link address string."
-        
-    app_link = st.text_input("Verified Public App URL Vector:", value=clean_url)
+    # Generate the QR Code dynamically
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(app_link)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
     
-    if app_link and "Please" not in app_link:
-        # Generate the QR Code dynamically based on the verified site address string 
-        qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(app_link)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # Convert image map to stream bytes for UI framework processing
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        byte_im = buf.getvalue()
-        
-        # Display clean render
-        st.image(byte_im, caption=f"Scan this code to route to: {app_link}")
-    else:
-        st.info("🔄 Detecting secure user parameters... If the QR code doesn't load, copy and paste your clean public .streamlit.app web address bar path directly into the input text box above.")
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    
+    st.image(byte_im, caption=f"Scan this code to route to: {app_link}")
