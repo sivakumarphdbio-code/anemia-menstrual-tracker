@@ -4,6 +4,7 @@ import sqlite3
 import qrcode
 from io import BytesIO
 from datetime import datetime
+import streamlit.components.v1 as components
 
 # --- 1. DATABASE SETUP ---
 def init_db():
@@ -69,6 +70,13 @@ def calculate_anemia_risk(flow, fatigue, dizziness, iron):
 init_db()
 st.set_page_config(page_title="Adolescent Health Assistant", page_icon="🩸", layout="centered")
 
+# --- 🌟 SIDEBAR NAVIGATION MENU ---
+st.sidebar.title("🧭 Main Menu")
+menu_choice = st.sidebar.radio(
+    "Go To Page:",
+    ["📝 Log Daily Health", "📊 Dashboard & History", "📚 Nutrition & Education", "📲 Scan & Share App"]
+)
+
 # App Main Title
 st.title("🩸 Adolescent Anemia & Menstrual Health Tracker")
 
@@ -85,10 +93,9 @@ st.divider()
 # Medical Disclaimer Requirement
 st.warning("⚠️ **Disclaimer:** This app is an educational screening assistant. It does not provide medical diagnoses or replace a clinical blood test.")
 
-# Layout Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📝 Log Daily Health", "📊 Dashboard & History", "📚 Nutrition & Education", "📲 Scan & Share App"])
+# --- PAGE ROUTING BASED ON SIDEBAR SELECTION ---
 
-with tab1:
+if menu_choice == "📝 Log Daily Health":
     st.header("Daily Health Log")
     with st.form("log_form", clear_on_submit=True):
         st.subheader("Menstrual Cycle Info")
@@ -109,7 +116,7 @@ with tab1:
             st.success("Log saved successfully!")
             st.metric(label="Calculated Screening Risk Level", value=risk_result)
 
-with tab2:
+elif menu_choice == "📊 Dashboard & History":
     st.header("Your Health History")
     logs_df = get_logs()
     
@@ -126,9 +133,9 @@ with tab2:
             st.success("All previous history has been cleared successfully!")
             st.rerun()
     else:
-        st.info("No logs found. Use the 'Log Daily Health' tab to enter your details.")
+        st.info("No logs found. Use the 'Log Daily Health' menu option to enter your details.")
 
-with tab3:
+elif menu_choice == "📚 Nutrition & Education":
     st.header("Educational Hub")
     st.markdown("""
     ### Why is Iron Important for Adolescent Girls?
@@ -140,25 +147,46 @@ with tab3:
     * **Avoid Tannins with Meals:** Avoid drinking black tea or coffee right after lunch or dinner, as they can block iron absorption.
     """)
 
-with tab4:
+elif menu_choice == "📲 Scan & Share App":
     st.header("📲 Scan to Open App on Your Phone")
-    st.write("Examiners and school students can scan this QR code using a phone camera to quickly access the tracking application interface.")
+    st.write("Examiners and students can scan this QR code using a phone camera to quickly access the tracking application interface.")
     
-    # Text input to set the destination link (Defaults to local web server)
-    app_link = st.text_input("App Link Address:", value="http://localhost:8501")
+    # --- AUTOMATED URL DETECTION ENGINE ---
+    # Hidden query parameter check
+    url_params = st.query_params
+    detected_url = url_params.get("current_address", "https://share.streamlit.io/")
     
-    # Generate the QR Code dynamically
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(app_link)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
+    # Seamless background script reading parent page address bar
+    components.html("""
+        <script>
+            const parentUrl = window.parent.location.href;
+            if (!parentUrl.includes('current_address=')) {
+                const separator = parentUrl.includes('?') ? '&' : '?';
+                window.parent.location.href = parentUrl + separator + 'current_address=' + encodeURIComponent(parentUrl);
+            }
+        </script>
+    """, height=0)
     
-    # Convert image to byte stream for Streamlit display
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    byte_im = buf.getvalue()
+    # Fallback input field which auto-populates with the verified global user address
+    clean_url = detected_url.split('?')[0] if '?' in detected_url else detected_url
+    if "share.streamlit.io" in clean_url:
+        clean_url = "Please verify your public user link address string."
+        
+    app_link = st.text_input("Verified Public App URL Vector:", value=clean_url)
     
-    # Display QR code centrally
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.image(byte_im, caption="Scan this code with your mobile camera to share or open the health tracker.")
+    if app_link and "Please" not in app_link:
+        # Generate the QR Code dynamically based on the verified site address string 
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(app_link)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert image map to stream bytes for UI framework processing
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        byte_im = buf.getvalue()
+        
+        # Display clean render
+        st.image(byte_im, caption=f"Scan this code to route to: {app_link}")
+    else:
+        st.info("🔄 Detecting secure user parameters... If the QR code doesn't load, copy and paste your clean public .streamlit.app web address bar path directly into the input text box above.")
